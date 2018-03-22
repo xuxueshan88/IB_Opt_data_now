@@ -162,8 +162,9 @@ class Processer(Thread):
         print('request done')
 
     def option_tikc_req(self):
-        index_continue = 112
-        if index_continue == 0:
+        index_continue = -1
+        if index_continue == -1:
+            index_continue = 0
             for index in self.stock_code_map.keys():
                 if self.client.process_done:
                     break
@@ -187,63 +188,40 @@ class Processer(Thread):
                 break
             else:
                 option_code = option_code_map[index]
-                if option_code not in option_code_ignore:
-                    if option_code in option_code_headtime.keys():
-                        option_code_headTime = option_code_headtime[option_code]
-                    else:
-                        option_code_headTime = 20171122
-                    self.client.opt_req_next_code = False
-                    queryTime = datetime.datetime(2018, 3, 12, 9, 30)
-                    if option_code in option_code_jump.keys():
-                        queryTime = datetime.datetime.strptime(option_code_jump[option_code],"%Y%m%d %H:%M:%S")
-                    self.opt_tick_req_single_code(index, option_code, queryTime, option_code_headTime)
+                self.client.opt_req_next_code = False
+                queryTime = datetime.datetime(2018, 3, 20, 9, 30)
+                self.opt_tick_req_single_code(index, option_code, queryTime)
 
         print('request option tick data done!')
 
-    def opt_tick_req_single_code(self,index,option_code,query_Time, option_code_headTime):
-        queryTime = query_Time
-        headTime = option_code_headTime
-        opt_req_next_code = False
-        order_id = index * 100000 + 1
-        while not opt_req_next_code and not self.client.process_done:
+    def opt_tick_req_single_code(self,index,option_code,queryTime):
+        self.client.opt_req_next_code = False
+        order_id = index*100000 + 1
+        while not self.client.opt_req_next_code and not self.client.process_done:
             time_recorder = 0
             self.client.reqHistoricalTicks(order_id, ContractSamples.OptionWithLocalSymbol(option_code),
                                            queryTime.strftime("%Y%m%d %H:%M:%S"), "", 1000, "TRADES", 1, True, [])
             time.sleep(10)
             while not self.client.process_done:
-                if self.client.opt_req_next_time:
-                    if queryTime.isoweekday() == 1:
-                        queryTime -= timedelta(days=3)
-                    else:
-                        queryTime -= timedelta(days=1)
-                    queryTime = datetime.datetime.combine(queryTime.date(),query_Time.time())
-                    order_id += 1
-                    print(queryTime)
-                    self.client.opt_req_next_time = False
-                    print('next time...............')
-                    print(datetime.datetime.now())
+                if self.client.opt_req_next_code:
+                    print('next code...............')
                     break
                 elif self.client.opt_req_continue:
                     queryTime = self.client.lasttime
                     order_id += 1
                     self.client.opt_req_continue = False
                     print('continue...............')
-                    print(datetime.datetime.now())
                     break
                 else:
-                    time.sleep(1)
+                    time.sleep(2)
                     time_recorder += 1
-                    if time_recorder > 180:  #3分钟内没有返回内容，则重新提交请求
+                    if time_recorder > 90:  #3分钟内没有返回内容，则重新提交请求
                         fw = open('data.txt', 'a')
                         fw.write(option_code+' '+str(order_id)+' '+str(queryTime)+'\n')
                         fw.close()
-                        self.client.opt_req_next_time = True
+                        self.client.opt_req_next_code = True
                         self.client.tick_num = 1
-                        time_recorder = 1
-                        # break
-                    print('sleeping.................')
-                    print(datetime.datetime.now())
-            if headTime > queryTime.year*10000+queryTime.month*100+queryTime.day :
-                opt_req_next_code = True
+                        break
+                    print(datetime.datetime.now(), 'sleeping.................')
 
         print(datetime.datetime.now())

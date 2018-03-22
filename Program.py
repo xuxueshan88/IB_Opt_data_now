@@ -231,7 +231,7 @@ class TestApp(TestWrapper, TestClient):
         self.process_done = False
         self.option_code_map = []
         self.req_opt_contract_end = False
-        self.opt_req_next_time = False
+        self.opt_req_next_code = False
         self.opt_req_continue = False
         self.lasttime = None
         self.order_id = 0
@@ -1018,7 +1018,7 @@ class TestApp(TestWrapper, TestClient):
                     self.tick_num += 1
                 print(len(ticks))
                 if len(ticks) < 1000:
-                    self.opt_req_next_time = True
+                    self.opt_req_next_code = True
                     print(self.tick_num - 1)
                     self.tick_num = 1
                 else:
@@ -1029,7 +1029,7 @@ class TestApp(TestWrapper, TestClient):
                         n -= 1
                     self.tick_num += (n + 1)
             else:
-                self.opt_req_next_time = True
+                self.opt_req_next_code = True
                 self.tick_num = 1
                 print(datetime.datetime.now())
     # ! [historicaltickslast]
